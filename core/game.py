@@ -122,7 +122,9 @@ class Game:
         self._draw_sprites()
         self._flip_screen()
 
-    def _update(self):
+    def _update(self) -> None:
+        '''Update the game'''
+        
         self._update_sprites()
 
     def _quit_game(self) -> None:
