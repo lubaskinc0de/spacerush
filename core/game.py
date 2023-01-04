@@ -2,6 +2,7 @@ import pygame
 
 from sprites.player import Player
 from sprites.mob import Mob
+from sprites.bullet import Bullet
 
 from .window import Window
 
@@ -13,6 +14,7 @@ class Game:
     GREEN = (0, 255, 0)
     BLUE = (0, 0, 255)
     RED = (255, 0, 0)
+    YELLOW = (255, 255, 0)
 
     def __init__(
         self, width: int, height: int,
@@ -20,6 +22,7 @@ class Game:
 
         self._sprites = pygame.sprite.Group()
         self._mobs = pygame.sprite.Group()
+        self._bullets = pygame.sprite.Group()
 
         self._clock = pygame.time.Clock()
 
@@ -75,6 +78,11 @@ class Game:
             
             self._add_sprite(m)
             self._add_mob(m)
+        
+    def _add_bullet(self, bullet: Bullet) -> None:
+        '''Add bullet to the game'''
+
+        self._bullets.add(bullet)
     
     def _stop(self):
         '''Stop the game'''
@@ -87,6 +95,15 @@ class Game:
         self._is_game_running = True
 
         self._main_loop()
+
+    def _spawn_bullet(self) -> None:
+        '''Shoot!'''
+
+        bullet = Bullet(10, 20, self._player.rect.x, self._player.rect.y)
+        bullet.set_color(self.YELLOW)
+
+        self._add_sprite(bullet)
+        self._add_bullet(bullet)
     
     def _dispatch_events(self, events: list[pygame.event.Event]):
         '''Dispatch game events'''
@@ -94,6 +111,10 @@ class Game:
         for event in events:
             if event.type == pygame.QUIT:
                 self._stop()
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_UP:
+                    print('shoot!')
+                    self._spawn_bullet()
     
     def _update_sprites(self) -> None:
         '''Update game sprites'''
@@ -130,6 +151,12 @@ class Game:
 
         pygame.quit()
     
+    def _check_player_collide_mobs(self) -> None:
+        '''Game over if player collide with mobs'''
+
+        if pygame.sprite.spritecollide(self._player, self._mobs, False):
+            self._stop()
+    
     def _main_loop(self) -> None:
         '''The main game loop'''
 
@@ -139,8 +166,7 @@ class Game:
             self._dispatch_events(events)
             self._update()
 
-            if pygame.sprite.spritecollide(self._player, self._mobs, False):
-                self._stop()
+            self._check_player_collide_mobs()
 
             self._render()
 

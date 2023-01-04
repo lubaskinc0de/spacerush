@@ -1,6 +1,5 @@
 from pygame.sprite import Sprite
 from pygame import Surface
-from pygame import key as pygame_key
 
 import random
 

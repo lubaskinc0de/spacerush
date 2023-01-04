@@ -2,7 +2,7 @@ from pygame.sprite import Sprite
 from pygame import Surface
 from pygame import key as pygame_key
 
-from pygame import K_LEFT, K_RIGHT
+from pygame import K_LEFT, K_RIGHT, K_UP
 
 class Player(Sprite):
     '''Player sprite'''
