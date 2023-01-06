@@ -398,5 +398,4 @@ class Game:
         self._game_over_sound.play()
 
         self._game_over()
-        sleep(2)
         self._quit_game()
