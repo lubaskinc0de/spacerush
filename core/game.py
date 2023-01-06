@@ -225,8 +225,6 @@ class Game:
                         self._spawn_bullet("left")
                     case pygame.K_x:
                         self._spawn_bullet("right")
-                    case pygame.K_ESCAPE:
-                        self._pause()
 
     def _update_sprites(self) -> None:
         """Update game sprites"""
