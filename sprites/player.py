@@ -2,18 +2,20 @@ from pygame.sprite import Sprite
 from pygame import Surface
 from pygame import key as pygame_key
 
-from pygame import K_LEFT, K_RIGHT, K_UP
+from pygame import K_LEFT, K_RIGHT
+from pygame import draw
+
 
 class Player(Sprite):
-    '''Player sprite'''
+    """Player sprite"""
 
     def __init__(
-        self, width: int, height: int,
-        window_width: int, window_height: int,
-        ) -> None:
+        self, window_width: int, window_height: int, player_img: Surface
+    ) -> None:
         super().__init__()
 
-        self.image = Surface((width, height))
+        self.image = player_img
+        self.image.set_colorkey((0, 0, 0))
         self.rect = self.image.get_rect()
 
         self.rect.centerx = window_width / 2
@@ -23,14 +25,9 @@ class Player(Sprite):
 
         self.window_height = window_height
         self.window_width = window_width
-    
-    def set_color(self, color: tuple[int, int, int]) -> None:
-        '''Set player color'''
 
-        self.image.fill(color)
-    
     def _move(self) -> None:
-        '''Move player with speed'''
+        """Move player with speed"""
 
         self.rect.x += self.speed
 
@@ -43,7 +40,7 @@ class Player(Sprite):
             self.speed = -8
         if keys_pressed[K_RIGHT]:
             self.speed = 8
-        
+
         self._move()
 
         if self.rect.right > self.window_width:
