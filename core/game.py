@@ -8,6 +8,7 @@ from typing import Optional
 from sprites.player import Player
 from sprites.mob import Mob
 from sprites.bullet import Bullet
+from sprites.explosion import Explosion
 
 from .window import Window
 from .background import Background
@@ -46,8 +47,13 @@ class Game:
         self._initialize_pygame()
         self._initialize_window(width, height, caption)
 
+        self._preload_images = {
+            'player': self._load_player_img(),
+            'bullet': self._load_bullet_img(),
+        }
+
         self._player = Player(
-            self._window.width, self._window.height, self._load_player_img()
+            self._window.width, self._window.height, self._get_player_img()
         )
 
         self._add_sprite(self._player)
@@ -59,6 +65,12 @@ class Game:
         self._font_name = pygame.font.match_font("arial")
 
         self._load_sounds()
+
+        self._explosion_images = self._load_explosions_images()
+        self._explosions = {
+            'lg': self._explosion_images.get('lg'),
+            'sm': self._explosion_images.get('sm'),
+        }
 
     def _initialize_pygame(self) -> None:
         """Initialize pygame"""
@@ -139,10 +151,43 @@ class Game:
 
     def _load_bullet_img(self) -> pygame.Surface:
         """Load bullet img"""
-
         bullet_img_path = os.path.join(self._assets_path, "sprites/bullet.png")
 
         return self._load_img(bullet_img_path)
+
+    def _load_explosions_images(self) -> dict['str', list[pygame.Surface]]:
+        """Load explosions"""
+
+        lg: list[pygame.Surface] = []
+        sm: list[pygame.Surface] = []
+
+        for explosion_i in range(8 + 1):
+            filename = "regularExplosion0{}.png".format(explosion_i)
+            explosion_img_path = os.path.join(self._assets_path, "explosions/{}".format(filename))
+
+            img = self._load_img(explosion_img_path)
+            img.set_colorkey(self.BLACK)
+
+            img_lg = pygame.transform.scale(img, (75, 75))
+            lg.append(img_lg)
+
+            img_sm = pygame.transform.scale(img, (32, 32))
+            sm.append(img_sm)
+
+        return {
+            'lg': lg,
+            'sm': sm,
+        }
+
+    def _get_player_img(self) -> pygame.Surface:
+        """Get player img"""
+
+        return self._preload_images.get('player')
+
+    def _get_bullet_img(self) -> pygame.Surface:
+        """Get bullet img"""
+
+        return self._preload_images.get('bullet')
 
     def _load_mob_img(self) -> pygame.Surface:
         """Load mob img"""
@@ -200,17 +245,20 @@ class Game:
         self._play_background_music()
         self._main_loop()
 
-    def _spawn_bullet(self, direction: str) -> None:
+    def _shoot(self, direction: str) -> None:
         """Shoot!"""
 
         x = self._player.rect.left if direction == "left" else self._player.rect.right
 
-        bullet = Bullet(x, self._player.rect.y, self._load_bullet_img())
+        if self._player.is_reloaded():
+            self._player.shoot()
 
-        self._add_sprite(bullet)
-        self._add_bullet(bullet)
+            bullet = Bullet(x, self._player.rect.y, self._get_bullet_img())
 
-        self._shoot_sound.play()
+            self._add_sprite(bullet)
+            self._add_bullet(bullet)
+
+            self._shoot_sound.play()
 
     def _dispatch_events(self, events: list[pygame.event.Event]):
         """Dispatch game events"""
@@ -219,12 +267,13 @@ class Game:
             if event.type == pygame.QUIT:
                 self._stop()
                 break
-            elif event.type == pygame.KEYDOWN:
-                match event.key:
-                    case pygame.K_z:
-                        self._spawn_bullet("left")
-                    case pygame.K_x:
-                        self._spawn_bullet("right")
+
+            key_states = pygame.key.get_pressed()
+
+            if key_states[pygame.K_z]:
+                self._shoot("left")
+            if key_states[pygame.K_x]:
+                self._shoot("right")
 
     def _update_sprites(self) -> None:
         """Update game sprites"""
@@ -309,16 +358,23 @@ class Game:
     def _check_player_collide_mobs(self) -> None:
         """Game over if player collide with mobs"""
 
-        hits = pygame.sprite.spritecollide(
+        hits: list[Mob] = pygame.sprite.spritecollide(
             self._player, self._mobs, True, pygame.sprite.collide_rect_ratio(0.52)
         )
 
         for hit in hits:
             self._health -= hit.radius * 2
+            self._blow_up('sm', hit.rect.center)
             self._add_mob()
 
             if self._health < 0:
                 self._stop()
+
+    def _blow_up(self, size: str, center: tuple[int, int]):
+        """Spawn new explosion"""
+
+        expl = Explosion(center, size, self._explosion_images)
+        self._add_sprite(expl)
 
     def _check_bullet_collide_mobs(self) -> None:
         """Kill mobs if bullet colide they"""
@@ -331,6 +387,7 @@ class Game:
             self._score += 36 - hit.radius
 
             self._boom_sound.play()
+            self._blow_up('lg', hit.rect.center)
             self._add_mob()
 
     def _draw_text(
@@ -338,8 +395,8 @@ class Game:
         surface: pygame.Surface,
         text: str,
         size: int,
-        x: int,
-        y: int,
+        x: int | float,
+        y: int | float,
         color: tuple[int, int, int] = (255, 255, 255),
     ):
         """Draw text on the screen"""
@@ -393,7 +450,6 @@ class Game:
 
             self._clock.tick(self._fps)
 
-        self._game_over_sound.play()
-
         self._game_over()
+        sleep(2)
         self._quit_game()

@@ -1,9 +1,10 @@
+import pygame.time
+
 from pygame.sprite import Sprite
 from pygame import Surface
 from pygame import key as pygame_key
 
 from pygame import K_LEFT, K_RIGHT
-from pygame import draw
 
 
 class Player(Sprite):
@@ -26,10 +27,24 @@ class Player(Sprite):
         self.window_height = window_height
         self.window_width = window_width
 
+        self._shoot_delay = 250
+        self._last_shoot = pygame.time.get_ticks()
+
     def _move(self) -> None:
         """Move player with speed"""
 
         self.rect.x += self.speed
+
+    def is_reloaded(self) -> bool:
+        """Is player ready for shoot"""
+
+        now = pygame.time.get_ticks()
+        return now - self._last_shoot > self._shoot_delay
+
+    def shoot(self) -> None:
+        """Reset last shoot"""
+
+        self._last_shoot = pygame.time.get_ticks()
 
     def update(self):
         self.speed = 0

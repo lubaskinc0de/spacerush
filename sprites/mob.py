@@ -9,7 +9,6 @@ class Mob(Sprite):
     """Mob sprite"""
 
     def __init__(self, window_w: int, window_h: int, mob_img: Surface) -> None:
-
         super().__init__()
 
         self.window_w = window_w
