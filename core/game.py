@@ -70,6 +70,7 @@ class Game:
         self._explosions = {
             'lg': self._explosion_images.get('lg'),
             'sm': self._explosion_images.get('sm'),
+            'player': self._explosion_images.get('player'),
         }
 
     def _initialize_pygame(self) -> None:
@@ -132,7 +133,7 @@ class Game:
 
         return Background(bg_path)
 
-    def _load_img(self, path: str, *size: Optional[tuple[int, int]]) -> pygame.Surface:
+    def _load_img(self, path: str, *size: Optional[int]) -> pygame.Surface:
         """Helper method for loading images"""
 
         img = pygame.image.load(path).convert()
@@ -160,10 +161,14 @@ class Game:
 
         lg: list[pygame.Surface] = []
         sm: list[pygame.Surface] = []
+        player: list[pygame.Surface] = []
 
         for explosion_i in range(8 + 1):
             filename = "regularExplosion0{}.png".format(explosion_i)
+            player_filename = "sonicExplosion0{}.png".format(explosion_i)
+
             explosion_img_path = os.path.join(self._assets_path, "explosions/{}".format(filename))
+            player_explosion_img_path = os.path.join(self._assets_path, "explosions/{}".format(player_filename))
 
             img = self._load_img(explosion_img_path)
             img.set_colorkey(self.BLACK)
@@ -174,9 +179,15 @@ class Game:
             img_sm = pygame.transform.scale(img, (32, 32))
             sm.append(img_sm)
 
+            player_explosion_img = self._load_img(player_explosion_img_path)
+            player_explosion_img.set_colorkey(self.BLACK)
+
+            player.append(player_explosion_img)
+
         return {
             'lg': lg,
             'sm': sm,
+            'player': player,
         }
 
     def _get_player_img(self) -> pygame.Surface:
@@ -358,23 +369,27 @@ class Game:
     def _check_player_collide_mobs(self) -> None:
         """Game over if player collide with mobs"""
 
-        hits: list[Mob] = pygame.sprite.spritecollide(
+        hits: list[pygame.sprite.Sprite] = pygame.sprite.spritecollide(
             self._player, self._mobs, True, pygame.sprite.collide_rect_ratio(0.52)
         )
 
         for hit in hits:
+            hit: Mob
             self._health -= hit.radius * 2
             self._blow_up('sm', hit.rect.center)
             self._add_mob()
 
             if self._health < 0:
-                self._stop()
+                self._death_expl = self._blow_up('player', self._player.rect.center)
+                self._player.kill()
 
     def _blow_up(self, size: str, center: tuple[int, int]):
         """Spawn new explosion"""
 
         expl = Explosion(center, size, self._explosion_images)
         self._add_sprite(expl)
+
+        return expl
 
     def _check_bullet_collide_mobs(self) -> None:
         """Kill mobs if bullet colide they"""
@@ -384,6 +399,7 @@ class Game:
         )
 
         for hit in hits:
+            hit: Mob
             self._score += 36 - hit.radius
 
             self._boom_sound.play()
@@ -449,6 +465,9 @@ class Game:
             self._render()
 
             self._clock.tick(self._fps)
+
+            if hasattr(self, '_death_expl') and not self._player.alive() and not self._death_expl.alive():
+                self._stop()
 
         self._game_over()
         sleep(2)
