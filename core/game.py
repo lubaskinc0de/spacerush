@@ -32,6 +32,7 @@ class Game:
         fps: int,
         mobs_count: int = 10,
         is_god_mode: bool = False,
+        lives: int = 3,
     ) -> None:
 
         self._assets_path = self._get_assets_path()
@@ -50,10 +51,11 @@ class Game:
         self._preload_images = {
             'player': self._load_player_img(),
             'bullet': self._load_bullet_img(),
+            'heart': self._load_heart_img(),
         }
 
         self._player = Player(
-            self._window.width, self._window.height, self._get_player_img()
+            self._window.width, self._window.height, self._get_player_img(), lives
         )
 
         self._add_sprite(self._player)
@@ -152,9 +154,20 @@ class Game:
 
     def _load_bullet_img(self) -> pygame.Surface:
         """Load bullet img"""
+
         bullet_img_path = os.path.join(self._assets_path, "sprites/bullet.png")
 
         return self._load_img(bullet_img_path)
+
+    def _load_heart_img(self) -> pygame.Surface:
+        """Load heart img"""
+
+        heart_img_path = os.path.join(self._assets_path, "sprites/heart.png")
+
+        img = self._load_img(heart_img_path)
+        img.set_colorkey(self.BLACK)
+
+        return img
 
     def _load_explosions_images(self) -> dict['str', list[pygame.Surface]]:
         """Load explosions"""
@@ -199,6 +212,11 @@ class Game:
         """Get bullet img"""
 
         return self._preload_images.get('bullet')
+
+    def _get_heart_img(self) -> pygame.Surface:
+        """Get heart img"""
+
+        return self._preload_images.get('heart')
 
     def _load_mob_img(self) -> pygame.Surface:
         """Load mob img"""
@@ -323,6 +341,7 @@ class Game:
             self._screen, f"Очки: {self._score}", 18, self._window.width / 2, 10
         )
         self._draw_health_bar(self._screen, 5, 5, self._health)
+        self._draw_lives(self._screen, self._window.width - ((30 * self._player.lives) + 10), 5, self._player.lives)
 
     def _render(self):
         """Render the game"""
@@ -381,7 +400,10 @@ class Game:
 
             if self._health < 0:
                 self._death_expl = self._blow_up('player', self._player.rect.center)
-                self._player.kill()
+
+                self._player.hide()
+                self._player.lives -= 1
+                self._health = 100
 
     def _blow_up(self, size: str, center: tuple[int, int]):
         """Spawn new explosion"""
@@ -442,6 +464,15 @@ class Game:
         pygame.draw.rect(surface, self.GREEN, fill_rect)
         self._draw_text(surface, f"{health}%", 18, x + (health_bar_length + 30), 0)
 
+    def _draw_lives(self, surface: pygame.Surface, x: int, y: int, lives: int):
+        for i in range(lives):
+            img_rect = self._get_heart_img().get_rect()
+            img_rect.x = x + 30 * i
+            img_rect.y = y
+
+            surface.blit(self._get_heart_img(), img_rect)
+
+
     def _game_over(self):
         """Game over"""
 
@@ -466,7 +497,7 @@ class Game:
 
             self._clock.tick(self._fps)
 
-            if hasattr(self, '_death_expl') and not self._player.alive() and not self._death_expl.alive():
+            if hasattr(self, '_death_expl') and self._player.lives <= 0 and not self._death_expl.alive():
                 self._stop()
 
         self._game_over()
