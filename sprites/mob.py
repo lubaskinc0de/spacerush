@@ -15,7 +15,6 @@ class Mob(Sprite):
         self.window_h = window_h
 
         self.image_orig = mob_img
-        self.image_orig.set_colorkey((0, 0, 0))
 
         self.image = self.image_orig.copy()
         self.rect = self.image.get_rect()

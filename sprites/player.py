@@ -16,7 +16,6 @@ class Player(Sprite):
         super().__init__()
 
         self.image = player_img
-        self.image.set_colorkey((0, 0, 0))
         self.rect = self.image.get_rect()
 
         self.rect.centerx = window_width / 2
@@ -34,6 +33,9 @@ class Player(Sprite):
         self._hidden = False
         self._hide_timer = pygame.time.get_ticks()
 
+        self.is_double_shot = False
+        self._double_shot_timer = pygame.time.get_ticks()
+
     def _move(self) -> None:
         """Move player with speed"""
 
@@ -50,6 +52,12 @@ class Player(Sprite):
 
         self._last_shoot = pygame.time.get_ticks()
 
+    def double_shoot(self) -> None:
+        """Set is double shot to True"""
+
+        self.is_double_shot = True
+        self._double_shot_timer = pygame.time.get_ticks()
+
     def hide(self) -> None:
         """Hide player"""
 
@@ -57,7 +65,7 @@ class Player(Sprite):
         self._hide_timer = pygame.time.get_ticks()
         self.rect.center = (self.window_width / 2, self.window_height + 200)
 
-    def unhide(self) -> None:
+    def _unhide(self) -> None:
         """Unhidden player before 1 sec from hide"""
 
         now = pygame.time.get_ticks()
@@ -67,8 +75,18 @@ class Player(Sprite):
             self.rect.centerx = self.window_width / 2
             self.rect.bottom = self.window_height - 10
 
+    def _disable_double_shoot(self) -> None:
+        """Disable double shoot before 5 secs"""
+
+        now = pygame.time.get_ticks()
+
+        if self.is_double_shot and now - self._double_shot_timer > 5000:
+            self.is_double_shot = False
+            self._double_shot_timer = now
+
     def update(self):
-        self.unhide()
+        self._unhide()
+        self._disable_double_shoot()
         self.speed = 0
 
         keys_pressed = pygame_key.get_pressed()

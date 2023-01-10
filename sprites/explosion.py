@@ -7,7 +7,12 @@ import pygame
 class Explosion(Sprite):
     """Explosion sprite"""
 
-    def __init__(self, center: tuple[int, int], size: str, explosion_images: dict[str, list[Surface]]) -> None:
+    def __init__(
+        self,
+        center: tuple[int, int],
+        size: str,
+        explosion_images: dict[str, list[Surface]],
+    ) -> None:
         super().__init__()
 
         self.size = size

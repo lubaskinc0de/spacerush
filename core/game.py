@@ -1,14 +1,13 @@
 import os
+import random
+
 import pygame
 
 from random import randrange
 from time import sleep
 from typing import Optional
 
-from sprites.player import Player
-from sprites.mob import Mob
-from sprites.bullet import Bullet
-from sprites.explosion import Explosion
+from sprites import Bullet, Explosion, Mob, Player, Pow
 
 from .window import Window
 from .background import Background
@@ -39,20 +38,14 @@ class Game:
         self._mobs_count = mobs_count
         self._is_god_mode = is_god_mode
 
-        self._sprites = pygame.sprite.Group()
-        self._mobs = pygame.sprite.Group()
-        self._bullets = pygame.sprite.Group()
+        self._create_sprite_groups()
 
         self._clock = pygame.time.Clock()
 
         self._initialize_pygame()
         self._initialize_window(width, height, caption)
 
-        self._preload_images = {
-            'player': self._load_player_img(),
-            'bullet': self._load_bullet_img(),
-            'heart': self._load_heart_img(),
-        }
+        self._load_images()
 
         self._player = Player(
             self._window.width, self._window.height, self._get_player_img(), lives
@@ -67,13 +60,6 @@ class Game:
         self._font_name = pygame.font.match_font("arial")
 
         self._load_sounds()
-
-        self._explosion_images = self._load_explosions_images()
-        self._explosions = {
-            'lg': self._explosion_images.get('lg'),
-            'sm': self._explosion_images.get('sm'),
-            'player': self._explosion_images.get('player'),
-        }
 
     def _initialize_pygame(self) -> None:
         """Initialize pygame"""
@@ -91,6 +77,34 @@ class Game:
         self._screen: pygame.Surface = self._window.get_screen()
 
         self._window.set_caption()
+
+    def _create_sprite_groups(self):
+        """Create sprite groups"""
+
+        self._sprites = pygame.sprite.Group()
+        self._mobs = pygame.sprite.Group()
+        self._bullets = pygame.sprite.Group()
+        self._powerups = pygame.sprite.Group()
+
+    def _load_images(self):
+        """Preload all images"""
+
+        self._pow_images = self._load_power_images()
+
+        self._preload_images = {
+            "player": self._load_player_img(),
+            "bullet": self._load_bullet_img(),
+            "heart": self._load_heart_img(),
+            "pow_gun": self._pow_images[0],
+            "pow_shield": self._pow_images[1],
+        }
+
+        self._explosion_images = self._load_explosions_images()
+        self._explosions = {
+            "lg": self._explosion_images.get("lg"),
+            "sm": self._explosion_images.get("sm"),
+            "player": self._explosion_images.get("player"),
+        }
 
     def _play_background_music(self) -> None:
         """Play bg music"""
@@ -122,6 +136,9 @@ class Game:
         )
         self._game_over_sound = pygame.mixer.Sound(game_over_sound_path)
 
+        powerup_sound_path: str = os.path.join(self._assets_path, "music/powerup.mp3")
+        self._powerup_sound = pygame.mixer.Sound(powerup_sound_path)
+
     def _get_assets_path(self) -> str:
         """Get assets path"""
 
@@ -139,37 +156,44 @@ class Game:
         """Helper method for loading images"""
 
         img = pygame.image.load(path).convert()
+        img.set_colorkey(self.BLACK)
 
         if any(size):
             return pygame.transform.scale(img, size)
 
         return img
 
+    def _load_sprite_img(self, filename: str, *size: Optional[int]):
+        """Load sprite image"""
+
+        img_path = os.path.join(self._assets_path, "sprites/{}".format(filename))
+
+        return self._load_img(img_path, *size)
+
     def _load_player_img(self) -> pygame.Surface:
         """Load player img"""
 
-        player_img_path = os.path.join(self._assets_path, "sprites/player.png")
-
-        return self._load_img(player_img_path)
+        return self._load_sprite_img("player.png")
 
     def _load_bullet_img(self) -> pygame.Surface:
         """Load bullet img"""
 
-        bullet_img_path = os.path.join(self._assets_path, "sprites/bullet.png")
-
-        return self._load_img(bullet_img_path)
+        return self._load_sprite_img("bullet.png")
 
     def _load_heart_img(self) -> pygame.Surface:
         """Load heart img"""
 
-        heart_img_path = os.path.join(self._assets_path, "sprites/heart.png")
+        return self._load_sprite_img("heart.png")
 
-        img = self._load_img(heart_img_path)
-        img.set_colorkey(self.BLACK)
+    def _load_power_images(self) -> list[pygame.Surface]:
+        """Load pow gun img"""
 
-        return img
+        return [
+            self._load_sprite_img("pow_gun.png", 48, 28),
+            self._load_sprite_img("heart.png"),
+        ]
 
-    def _load_explosions_images(self) -> dict['str', list[pygame.Surface]]:
+    def _load_explosions_images(self) -> dict["str", list[pygame.Surface]]:
         """Load explosions"""
 
         lg: list[pygame.Surface] = []
@@ -180,8 +204,12 @@ class Game:
             filename = "regularExplosion0{}.png".format(explosion_i)
             player_filename = "sonicExplosion0{}.png".format(explosion_i)
 
-            explosion_img_path = os.path.join(self._assets_path, "explosions/{}".format(filename))
-            player_explosion_img_path = os.path.join(self._assets_path, "explosions/{}".format(player_filename))
+            explosion_img_path = os.path.join(
+                self._assets_path, "explosions/{}".format(filename)
+            )
+            player_explosion_img_path = os.path.join(
+                self._assets_path, "explosions/{}".format(player_filename)
+            )
 
             img = self._load_img(explosion_img_path)
             img.set_colorkey(self.BLACK)
@@ -198,25 +226,33 @@ class Game:
             player.append(player_explosion_img)
 
         return {
-            'lg': lg,
-            'sm': sm,
-            'player': player,
+            "lg": lg,
+            "sm": sm,
+            "player": player,
         }
 
     def _get_player_img(self) -> pygame.Surface:
         """Get player img"""
 
-        return self._preload_images.get('player')
+        return self._preload_images.get("player")
 
     def _get_bullet_img(self) -> pygame.Surface:
         """Get bullet img"""
 
-        return self._preload_images.get('bullet')
+        return self._preload_images.get("bullet")
 
     def _get_heart_img(self) -> pygame.Surface:
         """Get heart img"""
 
-        return self._preload_images.get('heart')
+        return self._preload_images.get("heart")
+
+    def _get_power_images(self) -> dict[str, pygame.Surface]:
+        """Get power images"""
+
+        return {
+            "gun": self._preload_images.get("pow_gun"),
+            "shield": self._preload_images.get("pow_shield"),
+        }
 
     def _load_mob_img(self) -> pygame.Surface:
         """Load mob img"""
@@ -258,6 +294,14 @@ class Game:
 
         self._bullets.add(bullet)
 
+    def _add_powerup(self, center: tuple[int, int]):
+        pow_type = random.choice(["gun", "shield"])
+        random_pow_img = self._get_power_images().get(pow_type)
+        powerup = Pow(*center, random_pow_img, self._window.height, pow_type)
+
+        self._add_sprite(powerup)
+        self._powerups.add(powerup)
+
     def _stop(self):
         """Stop the game"""
 
@@ -286,6 +330,20 @@ class Game:
 
             self._add_sprite(bullet)
             self._add_bullet(bullet)
+
+            if self._player.is_double_shot:
+                bullet_two = Bullet(
+                    self._player.rect.right
+                    if x == self._player.rect.left
+                    else self._player.rect.left,
+                    self._player.rect.y,
+                    self._get_bullet_img(),
+                )
+
+                self._add_sprite(bullet_two)
+                self._add_bullet(bullet_two)
+
+                self._shoot_sound.play()
 
             self._shoot_sound.play()
 
@@ -341,7 +399,12 @@ class Game:
             self._screen, f"Очки: {self._score}", 18, self._window.width / 2, 10
         )
         self._draw_health_bar(self._screen, 5, 5, self._health)
-        self._draw_lives(self._screen, self._window.width - ((30 * self._player.lives) + 10), 5, self._player.lives)
+        self._draw_lives(
+            self._screen,
+            self._window.width - ((30 * self._player.lives) + 10),
+            5,
+            self._player.lives,
+        )
 
     def _render(self):
         """Render the game"""
@@ -385,6 +448,14 @@ class Game:
 
         pygame.quit()
 
+    def _blow_up(self, size: str, center: tuple[int, int]):
+        """Spawn new explosion"""
+
+        expl = Explosion(center, size, self._explosion_images)
+        self._add_sprite(expl)
+
+        return expl
+
     def _check_player_collide_mobs(self) -> None:
         """Game over if player collide with mobs"""
 
@@ -395,23 +466,46 @@ class Game:
         for hit in hits:
             hit: Mob
             self._health -= hit.radius * 2
-            self._blow_up('sm', hit.rect.center)
+            self._blow_up("sm", hit.rect.center)
             self._add_mob()
 
             if self._health < 0:
-                self._death_expl = self._blow_up('player', self._player.rect.center)
+                self._death_expl = self._blow_up("player", self._player.rect.center)
 
                 self._player.hide()
                 self._player.lives -= 1
                 self._health = 100
 
-    def _blow_up(self, size: str, center: tuple[int, int]):
-        """Spawn new explosion"""
+    def _powerup_health(self):
+        """Power up health"""
 
-        expl = Explosion(center, size, self._explosion_images)
-        self._add_sprite(expl)
+        self._health += random.randrange(10, 30)
+        if self._health > 100:
+            self._health = 100
 
-        return expl
+    def _powerup_gun(self):
+        """Powerup gun"""
+
+        self._player.double_shoot()
+
+    def _check_player_collide_powerups(self) -> None:
+        """Power up player if player collide with powerups"""
+
+        hits: list[pygame.sprite.Sprite] = pygame.sprite.spritecollide(
+            self._player, self._powerups, True, pygame.sprite.collide_rect_ratio(0.52)
+        )
+
+        for hit in hits:
+            hit: Pow
+
+            if hit.type == "shield":
+                self._powerup_health()
+            if hit.type == "gun":
+                self._powerup_gun()
+
+            self._powerup_sound.play()
+
+
 
     def _check_bullet_collide_mobs(self) -> None:
         """Kill mobs if bullet colide they"""
@@ -425,7 +519,10 @@ class Game:
             self._score += 36 - hit.radius
 
             self._boom_sound.play()
-            self._blow_up('lg', hit.rect.center)
+            self._blow_up("lg", hit.rect.center)
+
+            if random.random() > 0.9:
+                self._add_powerup(hit.rect.center)
             self._add_mob()
 
     def _draw_text(
@@ -472,7 +569,6 @@ class Game:
 
             surface.blit(self._get_heart_img(), img_rect)
 
-
     def _game_over(self):
         """Game over"""
 
@@ -488,6 +584,7 @@ class Game:
             self._dispatch_events(events)
             self._update()
 
+            self._check_player_collide_powerups()
             self._check_bullet_collide_mobs()
 
             if not self._is_god_mode:
@@ -497,7 +594,11 @@ class Game:
 
             self._clock.tick(self._fps)
 
-            if hasattr(self, '_death_expl') and self._player.lives <= 0 and not self._death_expl.alive():
+            if (
+                hasattr(self, "_death_expl")
+                and self._player.lives <= 0
+                and not self._death_expl.alive()
+            ):
                 self._stop()
 
         self._game_over()
