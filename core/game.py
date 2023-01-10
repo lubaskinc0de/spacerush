@@ -505,8 +505,6 @@ class Game:
 
             self._powerup_sound.play()
 
-
-
     def _check_bullet_collide_mobs(self) -> None:
         """Kill mobs if bullet colide they"""
 
