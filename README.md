@@ -27,6 +27,6 @@ https://www.veed.io/view/04a9a917-7cd1-4d16-bc50-14a77034070b?panel=share
 - Для запуска игры необходим python 3.10.8 - https://www.python.org/downloads/release/python-3108/
 - Далее, скачайте архив с игрой - https://github.com/lubaskinc0de/spacerush/archive/refs/heads/master.zip
 - Распакуйте его
-- Выполните '''sh pip install -r ./requirements.txt'''
-- Выполните '''sh python main.py'''
+- Выполните pip install -r ./requirements.txt
+- Выполните python main.py
 - Наслаждайтесь!
