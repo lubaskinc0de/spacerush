@@ -5,7 +5,7 @@ import pygame
 
 from random import randrange
 from time import sleep
-from typing import Optional
+from typing import Optional, List, Dict, Tuple
 
 from sprites import Bullet, Explosion, Mob, Player, Pow
 
@@ -185,7 +185,7 @@ class Game:
 
         return self._load_sprite_img("heart.png")
 
-    def _load_power_images(self) -> list[pygame.Surface]:
+    def _load_power_images(self) -> List[pygame.Surface]:
         """Load pow gun img"""
 
         return [
@@ -193,12 +193,12 @@ class Game:
             self._load_sprite_img("heart.png"),
         ]
 
-    def _load_explosions_images(self) -> dict["str", list[pygame.Surface]]:
+    def _load_explosions_images(self) -> Dict[str, List[pygame.Surface]]:
         """Load explosions"""
 
-        lg: list[pygame.Surface] = []
-        sm: list[pygame.Surface] = []
-        player: list[pygame.Surface] = []
+        lg: List[pygame.Surface] = []
+        sm: List[pygame.Surface] = []
+        player: List[pygame.Surface] = []
 
         for explosion_i in range(8 + 1):
             filename = "regularExplosion0{}.png".format(explosion_i)
@@ -246,7 +246,7 @@ class Game:
 
         return self._preload_images.get("heart")
 
-    def _get_power_images(self) -> dict[str, pygame.Surface]:
+    def _get_power_images(self) -> Dict[str, pygame.Surface]:
         """Get power images"""
 
         return {
@@ -294,7 +294,7 @@ class Game:
 
         self._bullets.add(bullet)
 
-    def _add_powerup(self, center: tuple[int, int]):
+    def _add_powerup(self, center: Tuple[int, int]):
         pow_type = random.choice(["gun", "shield"])
         random_pow_img = self._get_power_images().get(pow_type)
         powerup = Pow(*center, random_pow_img, self._window.height, pow_type)
@@ -347,7 +347,7 @@ class Game:
 
             self._shoot_sound.play()
 
-    def _dispatch_events(self, events: list[pygame.event.Event]):
+    def _dispatch_events(self, events: List[pygame.event.Event]):
         """Dispatch game events"""
 
         for event in events:
@@ -372,7 +372,7 @@ class Game:
 
         self._sprites.draw(self._screen)
 
-    def _fill_screen(self, color: tuple[int, int, int]) -> None:
+    def _fill_screen(self, color: Tuple[int, int, int]) -> None:
         """Fill the screen with color"""
 
         self._screen.fill(color)
@@ -448,7 +448,7 @@ class Game:
 
         pygame.quit()
 
-    def _blow_up(self, size: str, center: tuple[int, int]):
+    def _blow_up(self, size: str, center: Tuple[int, int]):
         """Spawn new explosion"""
 
         expl = Explosion(center, size, self._explosion_images)
@@ -459,7 +459,7 @@ class Game:
     def _check_player_collide_mobs(self) -> None:
         """Game over if player collide with mobs"""
 
-        hits: list[pygame.sprite.Sprite] = pygame.sprite.spritecollide(
+        hits: List[pygame.sprite.Sprite] = pygame.sprite.spritecollide(
             self._player, self._mobs, True, pygame.sprite.collide_rect_ratio(0.52)
         )
 
@@ -491,7 +491,7 @@ class Game:
     def _check_player_collide_powerups(self) -> None:
         """Power up player if player collide with powerups"""
 
-        hits: list[pygame.sprite.Sprite] = pygame.sprite.spritecollide(
+        hits: List[pygame.sprite.Sprite] = pygame.sprite.spritecollide(
             self._player, self._powerups, True, pygame.sprite.collide_rect_ratio(0.52)
         )
 
@@ -528,9 +528,9 @@ class Game:
         surface: pygame.Surface,
         text: str,
         size: int,
-        x: int | float,
-        y: int | float,
-        color: tuple[int, int, int] = (255, 255, 255),
+        x: float,
+        y: float,
+        color: Tuple[int, int, int] = (255, 255, 255),
     ):
         """Draw text on the screen"""
 
@@ -577,7 +577,7 @@ class Game:
         """The main game loop"""
 
         while self._is_game_running:
-            events: list[pygame.event.Event] = pygame.event.get()
+            events: List[pygame.event.Event] = pygame.event.get()
 
             self._dispatch_events(events)
             self._update()

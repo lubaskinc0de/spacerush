@@ -1,5 +1,6 @@
 from pygame.sprite import Sprite
 from pygame import Surface
+from typing import Tuple, Dict, List
 
 import pygame
 
@@ -9,9 +10,9 @@ class Explosion(Sprite):
 
     def __init__(
         self,
-        center: tuple[int, int],
+        center: Tuple[int, int],
         size: str,
-        explosion_images: dict[str, list[Surface]],
+        explosion_images: Dict[str, List[Surface]],
     ) -> None:
         super().__init__()
 

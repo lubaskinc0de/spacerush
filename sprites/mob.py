@@ -1,6 +1,6 @@
 from pygame.sprite import Sprite
 from pygame import Surface
-
+from typing import Tuple
 import random
 import pygame
 
@@ -30,7 +30,7 @@ class Mob(Sprite):
 
         self.radius = int(self.rect.width * 0.85 / 2)
 
-    def _get_random_coords(self) -> tuple[int, int]:
+    def _get_random_coords(self) -> Tuple[int, int]:
         """Get random coords"""
 
         random_x: int = random.randrange(self.window_w - self.rect.width)
