@@ -2,7 +2,7 @@
 
 ## Геймплей
 
-https://www.veed.io/view/04a9a917-7cd1-4d16-bc50-14a77034070b?panel=share
+https://www.youtube.com/watch?v=wcYKpM3x5p8
 
 ## Описание
 Это игра, написанная на Python с использованием Pygame.
